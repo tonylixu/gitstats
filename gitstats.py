@@ -264,6 +264,7 @@ class DataCollector:
     
     def getTotalLOC(self):
         return -1
+        
     
     ##
     # Save cacheable data
@@ -728,6 +729,7 @@ def html_header(level, text):
     return '\n<h%d id="%s"><a href="#%s">%s</a></h%d>\n\n' % (level, name, name, text, level)
 
 class HTMLReportCreator(ReportCreator):
+
     def create(self, data, path):
         ReportCreator.create(self, data, path)
         self.title = data.projectname
@@ -751,18 +753,71 @@ class HTMLReportCreator(ReportCreator):
 
         f.write('<h1>GitStats - %s</h1>' % data.projectname)
 
+         # New function for TSV write ins, put this in a more organized place later
+
+        def writeHeaderstoNewFile(fileName,headers, delimiter):
+            """
+            Writes the headers to the first line of the file
+
+            Args:
+                fileName (String): Name of the destination file, ex: "data.tsv"
+                headers (List(String)): Headers to be written, ex: ["header1","header2"....]
+
+            """
+            # assert fileName[-4:] ==".tsv", "fileName must be '.tsv' file not '%s'" %(fileName)
+
+            f = open (fileName,"w")
+            for headerIndex in range(len(headers)):
+                if headerIndex!=len(headers)-1:
+                    # write header along with\t 
+                    f.write(headers[headerIndex]+delimiter)
+                else:
+                    # write last word along with\n
+                    f.write(headers[len(headers)-1]+"\n")
+            f.close()
+        
+
         self.printNav(f)
+
+        writeHeaderstoNewFile(path + "/general.tsv", ['header','data'],"\t")
+        general_tsv=open(path + "/general.tsv", "a+")
+
+        
 
         f.write('<dl>')
         f.write('<dt>Project name</dt><dd>%s</dd>' % (data.projectname))
+        general_tsv.write('Project Name\t%s\n'%(data.projectname))
+
         f.write('<dt>Generated</dt><dd>%s (in %d seconds)</dd>' % (datetime.datetime.now().strftime(format), time.time() - data.getStampCreated()))
+        general_tsv.write('Generated\t%s (in %d seconds)\n'%((datetime.datetime.now().strftime(format), time.time() - data.getStampCreated())))
+
         f.write('<dt>Generator</dt><dd><a href="http://gitstats.sourceforge.net/">GitStats</a> (version %s), %s, %s</dd>' % (getversion(), getgitversion(), getgnuplotversion()))
         f.write('<dt>Report Period</dt><dd>%s to %s</dd>' % (data.getFirstCommitDate().strftime(format), data.getLastCommitDate().strftime(format)))
+        general_tsv.write('Report Period\t%s to %s\n'%(data.getFirstCommitDate().strftime(format), data.getLastCommitDate().strftime(format)))
+
         f.write('<dt>Age</dt><dd>%d days, %d active days (%3.2f%%)</dd>' % (data.getCommitDeltaDays(), len(data.getActiveDays()), (100.0 * len(data.getActiveDays()) / data.getCommitDeltaDays())))
+
+        general_tsv.write('Age\t%d days, %d active days (%3.2f%%)\n'% (data.getCommitDeltaDays(), len(data.getActiveDays()), (100.0 * len(data.getActiveDays()) / data.getCommitDeltaDays())))
+
+        
+
         f.write('<dt>Total Files</dt><dd>%s</dd>' % data.getTotalFiles())
+        general_tsv.write('Total Files\t%s\n'% data.getTotalFiles())
+
+
         f.write('<dt>Total Lines of Code</dt><dd>%s (%d added, %d removed)</dd>' % (data.getTotalLOC(), data.total_lines_added, data.total_lines_removed))
+
+        general_tsv.write('Total Lines of Code\t%s (%d added, %d removed)\n' %(data.getTotalLOC(),data.total_lines_added, data.total_lines_removed))
+        
         f.write('<dt>Total Commits</dt><dd>%s (average %.1f commits per active day, %.1f per all days)</dd>' % (data.getTotalCommits(), float(data.getTotalCommits()) / len(data.getActiveDays()), float(data.getTotalCommits()) / data.getCommitDeltaDays()))
+
+        general_tsv.write('Total Commits\t%s (average %.1f commits per active day, %.1f per all days)\n' % (data.getTotalCommits(), float(data.getTotalCommits()) / len(data.getActiveDays()), float(data.getTotalCommits()) / data.getCommitDeltaDays()))
+
+
         f.write('<dt>Authors</dt><dd>%s (average %.1f commits per author)</dd>' % (data.getTotalAuthors(), (1.0 * data.getTotalCommits()) / data.getTotalAuthors()))
+
+        general_tsv.write('Authors\t%s (average %.1f commits per author)\n' % (data.getTotalAuthors(), (1.0 * data.getTotalCommits()) / data.getTotalAuthors()))
+
         f.write('</dl>')
 
         f.write('</body>\n</html>')
@@ -783,6 +838,11 @@ class HTMLReportCreator(ReportCreator):
         WEEKS = 32
         f.write(html_header(2, 'Weekly activity'))
         f.write('<p>Last %d weeks</p>' % WEEKS)
+
+        writeHeaderstoNewFile(path + "/day_of_week_TEST.tsv", ['day_number','day_name','commits'],"\t")
+        day_of_week_tsv=open(path + "/day_of_week_TEST.tsv", "a+")
+
+        writeHeaderstoNewFile(path + "/weekly_actvitity_TEST.tsv", ['days, commits'], "\t")
 
         # generate weeks to show (previous N weeks from now)
         now = datetime.datetime.now()
@@ -805,6 +865,8 @@ class HTMLReportCreator(ReportCreator):
                 percentage = float(data.activity_by_year_week[weeks[i]]) / data.activity_by_year_week_peak
             height = max(1, int(200 * percentage))
             f.write('<td style="text-align: center; vertical-align: bottom">%d<div style="display: block; background-color: red; width: 20px; height: %dpx"></div></td>' % (commits, height))
+
+
 
         # bottom row: year/week
         f.write('</tr><tr>')
@@ -847,7 +909,15 @@ class HTMLReportCreator(ReportCreator):
                 fg.write('%d 0\n' % (i + 1))
         fg.close()
 
+
         # Day of Week
+
+        writeHeaderstoNewFile(path + "/day_of_week_TEST.tsv", ['day_number','day_name','commits'],"\t")
+        day_of_week_tsv=open(path + "/day_of_week_TEST.tsv", "a+")
+        # FOR TABLE OUTPUT, NEED TO TEST THIS, THINK I CAN GET AROUND THIS USING TSVS
+        writeHeaderstoNewFile(path +"/day_of_week_TABLE.csv", ['Day_Num','Day_Name', 'Commits'], ',')
+        day_of_week_TABLE=open(path + "/day_of_week_TABLE.csv", "a+")
+
         f.write(html_header(2, 'Day of Week'))
         day_of_week = data.getActivityByDayOfWeek()
         f.write('<div class="vtable"><table>')
@@ -858,6 +928,9 @@ class HTMLReportCreator(ReportCreator):
             if d in day_of_week:
                 commits = day_of_week[d]
             fp.write('%d %s %d\n' % (d + 1, WEEKDAYS[d], commits))
+            # WRITE TO TSV, add +1, may cause off by one err
+            day_of_week_tsv.write("%d\t%s\t%d\n" %(d+1, WEEKDAYS[d],commits))
+            day_of_week_TABLE.write("%d,%s,%d\n" %(d+1, WEEKDAYS[d],commits))
             f.write('<tr>')
             f.write('<th>%s</th>' % (WEEKDAYS[d]))
             if d in day_of_week:
@@ -869,7 +942,11 @@ class HTMLReportCreator(ReportCreator):
         f.write('<img src="day_of_week.png" alt="Day of Week">')
         fp.close()
 
+       
         # Hour of Week
+        writeHeaderstoNewFile( path+"/hour_of_week_TEST.tsv", ['day','hour','value'], "\t")
+        hour_of_week_TEST=open( path+"/hour_of_week_TEST.tsv", "a+")
+
         f.write(html_header(2, 'Hour of Week'))
         f.write('<table>')
 
@@ -877,7 +954,6 @@ class HTMLReportCreator(ReportCreator):
         for hour in range(0, 24):
             f.write('<th>%d</th>' % (hour))
         f.write('</tr>')
-
         for weekday in range(0, 7):
             f.write('<tr><th>%s</th>' % (WEEKDAYS[weekday]))
             for hour in range(0, 24):
@@ -890,8 +966,10 @@ class HTMLReportCreator(ReportCreator):
                     r = 127 + int((float(commits) / data.activity_by_hour_of_week_busiest) * 128)
                     f.write(' style="background-color: rgb(%d, 0, 0)"' % r)
                     f.write('>%d</td>' % commits)
+                    hour_of_week_TEST.write("%d\t%d\t%d\n" %(weekday+1,hour+1,commits))
                 else:
                     f.write('<td></td>')
+                    hour_of_week_TEST.write("%d\t%d\t%d\n" %(weekday+1,hour+1,0))
             f.write('</tr>')
 
         f.write('</table>')
@@ -912,10 +990,16 @@ class HTMLReportCreator(ReportCreator):
         f.write('<img src="month_of_year.png" alt="Month of Year">')
 
         # Commits by year/month
+        # TEST THIS
+        writeHeaderstoNewFile(path+"/commits_by_year_month_TABLE.tsv", ['Month','Commits','Lines added','Lines removed'], ",")
+        commits_by_year_month_TABLE=open( path+"/commits_by_year_month_TABLE.tsv", "a+")
+
+
         f.write(html_header(2, 'Commits by year/month'))
         f.write('<div class="vtable"><table><tr><th>Month</th><th>Commits</th><th>Lines added</th><th>Lines removed</th></tr>')
         for yymm in reversed(sorted(data.commits_by_month.keys())):
             f.write('<tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>' % (yymm, data.commits_by_month.get(yymm,0), data.lines_added_by_month.get(yymm,0), data.lines_removed_by_month.get(yymm,0)))
+            commits_by_year_month_TABLE.write('%s\t%d\t%d\t%d\n' % (yymm, data.commits_by_month.get(yymm,0), data.lines_added_by_month.get(yymm,0), data.lines_removed_by_month.get(yymm,0)))
         f.write('</table></div>')
         f.write('<img src="commits_by_year_month.png" alt="Commits by year/month">')
         fg = open(path + '/commits_by_year_month.dat', 'w')
@@ -959,14 +1043,26 @@ class HTMLReportCreator(ReportCreator):
         self.printNav(f)
 
         # Authors :: List of authors
+
+        writeHeaderstoNewFile(path + "/list_authors.tsv", ['author','commits','pos_lines','neg_lines', 'first_commit', 'last_commit', 'age', 'active_days', 'num_by_commits'],"\t")
+        list_authors_tsv=open(path + "/list_authors.tsv", "a+")
+
+
+
         f.write(html_header(2, 'List of Authors'))
+        authors_file= open(path + "/authors.tsv","w")
 
         f.write('<table class="authors sortable" id="authors">')
         f.write('<tr><th>Author</th><th>Commits (%)</th><th>+ lines</th><th>- lines</th><th>First commit</th><th>Last commit</th><th class="unsortable">Age</th><th>Active days</th><th># by commits</th></tr>')
         for author in data.getAuthors(conf['max_authors']):
             info = data.getAuthorInfo(author)
+            authors_file.write(author+"\t")
             f.write('<tr><td>%s</td><td>%d (%.2f%%)</td><td>%d</td><td>%d</td><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td>%d</td></tr>' % (author, info['commits'], info['commits_frac'], info['lines_added'], info['lines_removed'], info['date_first'], info['date_last'], info['timedelta'], len(info['active_days']), info['place_by_commits']))
+            # write tabular data to tsv
+            list_authors_tsv.write("%s\t%d (%.2f%%)\t %d\t%d\t%s\t%s\t%s\t%d\t%d\n" %(author, info['commits'], info['commits_frac'], info['lines_added'], info['lines_removed'], info['date_first'], info['date_last'], info['timedelta'], len(info['active_days']), info['place_by_commits']))
+
         f.write('</table>')
+        # authors_file.write("\n")
 
         allauthors = data.getAuthors()
         if len(allauthors) > conf['max_authors']:
@@ -983,8 +1079,11 @@ class HTMLReportCreator(ReportCreator):
         if len(allauthors) > conf['max_authors']:
             f.write('<p class="moreauthors">Only top %d authors shown</p>' % conf['max_authors'])
 
+
         fgl = open(path + '/lines_of_code_by_author.dat', 'w')
         fgc = open(path + '/commits_by_author.dat', 'w')
+
+
 
         lines_by_authors = {} # cumulated added lines by
         # author. to save memory,
@@ -1004,29 +1103,44 @@ class HTMLReportCreator(ReportCreator):
         for stamp in sorted(data.changes_by_date_by_author.keys()):
             fgl.write('%d' % stamp)
             fgc.write('%d' % stamp)
+
+            # hour_of_week_TEST.write("%d\t" %(stamp))
+            # commits_by_author_TEST.write("%d\t" %(stamp))
+
             for author in self.authors_to_plot:
                 if author in data.changes_by_date_by_author[stamp].keys():
                     lines_by_authors[author] = data.changes_by_date_by_author[stamp][author]['lines_added']
                     commits_by_authors[author] = data.changes_by_date_by_author[stamp][author]['commits']
                 fgl.write(' %d' % lines_by_authors[author])
                 fgc.write(' %d' % commits_by_authors[author])
+
+                # hour_of_week_TEST.write("%d\t" % lines_by_authors[author] )
+                # commits_by_author_TEST.write("%d\t" % commits_by_authors[author] )
+
+            # hour_of_week_TEST.write("\n")
+            # commits_by_author_TEST.write("\n")
+
             fgl.write('\n')
             fgc.write('\n')
         fgl.close()
         fgc.close()
 
         # Authors :: Author of Month
+        
         f.write(html_header(2, 'Author of Month'))
         f.write('<table class="sortable" id="aom">')
         f.write('<tr><th>Month</th><th>Author</th><th>Commits (%%)</th><th class="unsortable">Next top %d</th><th>Number of authors</th></tr>' % conf['authors_top'])
         for yymm in reversed(sorted(data.author_of_month.keys())):
+
             authordict = data.author_of_month[yymm]
             authors = getkeyssortedbyvalues(authordict)
             authors.reverse()
+
             commits = data.author_of_month[yymm][authors[0]]
             next = ', '.join(authors[1:conf['authors_top']+1])
             f.write('<tr><td>%s</td><td>%s</td><td>%d (%.2f%% of %d)</td><td>%s</td><td>%d</td></tr>' % (yymm, authors[0], commits, (100.0 * commits) / data.commits_by_month[yymm], data.commits_by_month[yymm], next, len(authors)))
-
+        
+      
         f.write('</table>')
 
         f.write(html_header(2, 'Author of Year'))
@@ -1091,7 +1205,7 @@ class HTMLReportCreator(ReportCreator):
         for line in sorted(list(files_by_date)):
             fg.write('%s\n' % line)
         #for stamp in sorted(data.files_by_stamp.keys()):
-        #	fg.write('%s %d\n' % (datetime.datetime.fromtimestamp(stamp).strftime('%Y-%m-%d'), data.files_by_stamp[stamp]))
+        #   fg.write('%s %d\n' % (datetime.datetime.fromtimestamp(stamp).strftime('%Y-%m-%d'), data.files_by_stamp[stamp]))
         fg.close()
             
         f.write('<img src="files_by_date.png" alt="Files by Date">')
@@ -1099,6 +1213,12 @@ class HTMLReportCreator(ReportCreator):
         #f.write('<h2>Average file size by date</h2>')
 
         # Files :: Extensions
+
+        writeHeaderstoNewFile(path + "/extensions.tsv", ['extension','files','lines','lines_file'],"\t")
+        extensions_tsv=open(path + "/extensions.tsv", "a+")
+
+
+
         f.write(html_header(2, 'Extensions'))
         f.write('<table class="sortable" id="ext"><tr><th>Extension</th><th>Files (%)</th><th>Lines (%)</th><th>Lines/file</th></tr>')
         for ext in sorted(data.extensions.keys()):
@@ -1109,6 +1229,9 @@ class HTMLReportCreator(ReportCreator):
             except ZeroDivisionError:
                 loc_percentage = 0
             f.write('<tr><td>%s</td><td>%d (%.2f%%)</td><td>%d (%.2f%%)</td><td>%d</td></tr>' % (ext, files, (100.0 * files) / data.getTotalFiles(), lines, loc_percentage, lines / files))
+            # write extension data to extensions.tsv
+            extensions_tsv.write('%s\t%d (%.2f%%)\t%d (%.2f%%)\t%d\n' % (ext, files, (100.0 * files) / data.getTotalFiles(), lines, loc_percentage, lines / files))
+
         f.write('</table>')
 
         f.write('</body></html>')
