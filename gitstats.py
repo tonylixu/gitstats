@@ -1104,6 +1104,12 @@ class HTMLReportCreator(ReportCreator):
             fgl.write('%d' % stamp)
             fgc.write('%d' % stamp)
 
+             # For easy ctrl f search of the downloaded file, give the proper non-unix timestamp, 
+             # NEEDS TESTING
+            # stamp_converted = datetime.datetime.fromtimestamp(int(stamp)).strftime('%Y-%m-%d %H:%M:%S')
+            # fgl.write(' %s' % stamp_converted)
+            # fgc.write(' %s' % stamp_converted)
+
             # hour_of_week_TEST.write("%d\t" %(stamp))
             # commits_by_author_TEST.write("%d\t" %(stamp))
 
@@ -1113,12 +1119,6 @@ class HTMLReportCreator(ReportCreator):
                     commits_by_authors[author] = data.changes_by_date_by_author[stamp][author]['commits']
                 fgl.write(' %d' % lines_by_authors[author])
                 fgc.write(' %d' % commits_by_authors[author])
-
-                # hour_of_week_TEST.write("%d\t" % lines_by_authors[author] )
-                # commits_by_author_TEST.write("%d\t" % commits_by_authors[author] )
-
-            # hour_of_week_TEST.write("\n")
-            # commits_by_author_TEST.write("\n")
 
             fgl.write('\n')
             fgc.write('\n')
@@ -1205,7 +1205,7 @@ class HTMLReportCreator(ReportCreator):
         for line in sorted(list(files_by_date)):
             fg.write('%s\n' % line)
         #for stamp in sorted(data.files_by_stamp.keys()):
-        #   fg.write('%s %d\n' % (datetime.datetime.fromtimestamp(stamp).strftime('%Y-%m-%d'), data.files_by_stamp[stamp]))
+        #	fg.write('%s %d\n' % (datetime.datetime.fromtimestamp(stamp).strftime('%Y-%m-%d'), data.files_by_stamp[stamp]))
         fg.close()
             
         f.write('<img src="files_by_date.png" alt="Files by Date">')
@@ -1261,6 +1261,10 @@ class HTMLReportCreator(ReportCreator):
 
         ###
         # tags.html
+
+        writeHeaderstoNewFile(path + "/tags.tsv", ['name','date','commits','authors'],"\t")
+        tags_tsv=open(path + "/tags.tsv", "a+")
+
         f = open(path + '/tags.html', 'w')
         self.printHeader(f)
         f.write('<h1>Tags</h1>')
@@ -1282,10 +1286,18 @@ class HTMLReportCreator(ReportCreator):
             for i in reversed(self.authors_by_commits):
                 authorinfo.append('%s (%d)' % (i, data.tags[tag]['authors'][i]))
             f.write('<tr><td>%s</td><td>%s</td><td>%d</td><td>%s</td></tr>' % (tag, data.tags[tag]['date'], data.tags[tag]['commits'], ', '.join(authorinfo)))
+            tags_tsv.write("%s\t%s\t%d\t%s\n" %(tag, data.tags[tag]['date'], data.tags[tag]['commits'], ', '.join(authorinfo)))
+
         f.write('</table>')
 
         f.write('</body></html>')
         f.close()
+
+
+        
+
+
+
 
         self.createGraphs(path)
     
@@ -1557,7 +1569,12 @@ class GitStats:
             sys.exit(0)
 
         outputpath = os.path.abspath(args[-1])
+
+       
+
         rundir = os.getcwd()
+
+         
 
         try:
             os.makedirs(outputpath)
@@ -1606,6 +1623,11 @@ class GitStats:
             print
             print '   sensible-browser \'%s\'' % os.path.join(outputpath, 'index.html').replace("'", "'\\''")
             print
+        
+        # execute git2json for top files
+        os.system("cd "+os.path.abspath(args[0])+" && git2json > '"+os.path.abspath(args[-1])+"/top_committed_files.json'")
+
+        print ("Executed git2json on source: %s to location: %s" %(os.path.abspath(args[0]), os.path.abspath(args[-1])))
 
 if __name__=='__main__':
     g = GitStats()
